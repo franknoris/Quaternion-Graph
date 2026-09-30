@@ -4,7 +4,6 @@
 
 [![Live demo](https://img.shields.io/badge/demo-sololearn-blue)](https://sololearn.com/compiler-playground/WY1cw1AhM2De/?ref=app)
 [![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
-[![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 ---
 
