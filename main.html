@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#08080a" />
+<title>Quaternion Graph — Bell Numbers · Sphere</title>
+
+<!-- ============================================================
+     FIX: MathJax "localStorage access denied" in sandboxed frames.
+     Install an in-memory shim BEFORE MathJax loads.
+     ============================================================ -->
+<script>
+(function () {
+  function lsWorks() {
+    try {
+      var k = "__ls_probe__" + Math.random();
+      window.localStorage.setItem(k, "1");
+      window.localStorage.removeItem(k);
+      return true;
+    } catch (e) { return false; }
+  }
+  if (lsWorks()) return;
+
+  var mem = Object.create(null);
+  var shim = {
+    get length() { return Object.keys(mem).length; },
+    key: function (i) { var ks = Object.keys(mem); return i >= 0 && i < ks.length ? ks[i] : null; },
+    getItem: function (k) { return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+    setItem: function (k, v) { mem[k] = String(v); },
+    removeItem: function (k) { delete mem[k]; },
+    clear: function () { for (var k in mem) delete mem[k]; }
+  };
+  try { Object.defineProperty(window, "localStorage",  { value: shim, configurable: true }); } catch (e) {}
+  try { Object.defineProperty(window, "sessionStorage", { value: shim, configurable: true }); } catch (e) {}
+})();
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{--bg:#08080a;--fg:#e0e0e8;--muted:#6a6a76;--accent:#c5b6ff;--accent-soft:#9a8aff;--panel:rgba(15,15,20,.85);--panel-border:rgba(255,255,255,.08);--btn-bg:rgba(255,255,255,.05);--btn-bg-hover:rgba(255,255,255,.12);--btn-border:rgba(255,255,255,.12);--safe-t:env(safe-area-inset-top,0px);--safe-r:env(safe-area-inset-right,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px)}
+html,body{margin:0;height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+#graph{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#graph.dragging{cursor:grabbing}
+.hud{position:fixed;top:calc(12px + var(--safe-t));left:calc(14px + var(--safe-l));pointer-events:none;max-width:min(62vw,380px);z-index:2}
+.hud .title{font-size:clamp(11px,2.6vw,13px);font-weight:600;letter-spacing:.2px;color:#fff}
+.hud .stat,.hud .bell,.hud .sel{font-size:clamp(9.5px,2.3vw,10.5px);margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .stat{color:var(--muted)}
+.hud .bell{color:var(--accent-soft);margin-top:4px}
+.hud .bell b{color:var(--accent);font-weight:600}
+.hud .bell i{color:#5c5c68;font-style:normal}
+.hud .sel{color:#d8d8e4;margin-top:8px;min-height:1em}
+.topRight{position:fixed;top:calc(10px + var(--safe-t));right:calc(12px + var(--safe-r));display:flex;gap:5px;align-items:flex-end;flex-direction:column;z-index:3}
+.topRight .row{display:flex;gap:5px}
+button{background:var(--btn-bg);border:1px solid var(--btn-border);color:#b0b0bc;font:inherit;font-size:11px;letter-spacing:.2px;padding:7px 12px;min-height:32px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s,transform .1s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:hover{background:var(--btn-bg-hover);color:#fff}
+button:active{transform:scale(.96)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.on{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5);color:#fff}
+button.zoomBtn{width:34px;min-height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;font-weight:500}
+.zoomLabel{font-size:10px;color:#6c6c78;min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+.slider-group{display:flex;align-items:center;gap:7px;font-size:10.5px;color:#7a7a86}
+.slider-group label{letter-spacing:.2px}
+.slider-group input[type=range]{-webkit-appearance:none;appearance:none;width:80px;height:4px;background:rgba(255,255,255,.12);border-radius:3px;outline:none;cursor:pointer;touch-action:pan-x}
+.slider-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 0 8px rgba(197,182,255,.5)}
+.slider-group input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--accent);border:none;border-radius:50%;cursor:pointer;box-shadow:0 0 8px rgba(197,182,255,.5)}
+.slider-group .val{font-variant-numeric:tabular-nums;min-width:22px;color:#b8b8c4;font-weight:500}
+.controls{position:fixed;left:50%;bottom:calc(10px + var(--safe-b));transform:translateX(-50%);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:min(780px,calc(100vw - 16px - var(--safe-l) - var(--safe-r)));background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--panel-border);border-radius:14px;padding:8px 12px;z-index:4;box-shadow:0 8px 32px rgba(0,0,0,.45)}
+.eqPanel{position:fixed;top:calc(88px + var(--safe-t));right:calc(12px + var(--safe-r));width:min(440px,calc(100vw - 24px - var(--safe-l) - var(--safe-r)));max-height:calc(100dvh - 88px - 124px - var(--safe-t) - var(--safe-b));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;background:rgba(12,12,17,.95);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--panel-border);border-radius:14px;padding:6px;z-index:5;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.eqPanel[hidden]{display:none}
+.eqGroup{font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:#6a6a76;padding:10px 10px 4px}
+.eqItem{border-radius:10px}
+.eqHead{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px;border-radius:10px;background:transparent;border-color:transparent;padding:9px 10px;white-space:normal;font-size:12px;color:#c8c8d4;min-height:0;font-weight:500}
+.eqHead::after{content:"\203A";transition:transform .15s;color:#7a7a86;font-size:14px;line-height:1}
+.eqItem.open>.eqHead{background:rgba(255,255,255,.08);color:#fff}
+.eqItem.open>.eqHead::after{transform:rotate(90deg)}
+.eqBody{padding:4px 12px 12px;font-size:12px;line-height:1.55;color:#c0c0cc}
+.eqBody[hidden]{display:none}
+.eqBody p{margin:6px 0}
+.eqBody .lbl{color:var(--accent);font-weight:600;letter-spacing:.2px}
+.eq{overflow-x:auto;padding:8px 4px;color:#eee;font-size:13px;-webkit-overflow-scrolling:touch;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:9px;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center}
+.eq mjx-container{margin:.3em 0!important}
+.eqFallback{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;color:#9a9aa8;white-space:pre-wrap;word-break:break-word;text-align:left;padding:4px 8px}
+@media (max-width:760px){.hud{max-width:46vw}.slider-group input[type=range]{width:68px}}
+@media (max-width:600px){.controls{left:calc(8px + var(--safe-l));right:calc(8px + var(--safe-r));transform:none;max-width:none;gap:6px;padding:8px 10px;border-radius:16px}.slider-group{gap:5px;font-size:10px}.slider-group input[type=range]{width:72px}button{padding:7px 10px;font-size:10.5px}.hud{max-width:42vw}.eqPanel{top:calc(84px + var(--safe-t));right:calc(8px + var(--safe-r));left:calc(8px + var(--safe-l));width:auto}}
+@media (max-width:400px){#statsLine2{display:none}.slider-group input[type=range]{width:60px}.zoomLabel{min-width:32px}.eq{font-size:11.5px;padding:6px}}
+@media (hover:none){#graph{cursor:default}}
+@media (prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+
+<!-- ============================================================
+     MathJax — hardened config (no storage-dependent features)
+     ============================================================ -->
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['\\(', '\\)']],
+    displayMath: [['\\[', '\\]']]
+  },
+  svg: { fontCache: 'none' },           // 'none' → no localStorage font cache
+  options: {
+    enableMenu: false,                  // menu state uses localStorage
+    enableAssistiveMml: false           // a11y settings use localStorage
+  },
+  startup: {
+    typeset: false,
+    ready: function () {
+      try {
+        MathJax.startup.defaultReady();
+        MathJax.startup.promise.then(
+          function () { window.dispatchEvent(new Event('mjready')); },
+          function () { window.dispatchEvent(new Event('mjready')); }
+        );
+      } catch (e) {
+        window.dispatchEvent(new Event('mjready'));
+      }
+    }
+  }
+};
+// Safety: even if MathJax never loads (offline, blocked CDN), release the
+// panel from a loading state after a short grace period.
+setTimeout(function () { window.dispatchEvent(new Event('mjready')); }, 4000);
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+</head>
+<body>
+
+<canvas id="graph" role="img" aria-label="Interactive 3D quaternion graph"></canvas>
+
+<div class="hud">
+  <div class="title">Quaternion Graph</div>
+  <div class="stat" id="statsLine1">—</div>
+  <div class="stat" id="statsLine2">—</div>
+  <div class="bell" id="bellLine" title="Bell number B(n): number of ways to partition n nodes into non-empty groups">—</div>
+  <div class="sel" id="selLine" aria-live="polite"></div>
+</div>
+
+<div class="topRight">
+  <div class="row">
+    <button id="btnColor" class="on" aria-pressed="true">◐ Color</button>
+    <button id="btnAuto" class="on" aria-pressed="true">⟳ Auto</button>
+  </div>
+  <div class="row">
+    <button id="btnEq" aria-expanded="false" aria-controls="eqPanel">ƒ Equations ▾</button>
+    <button id="btnReset">Reset view</button>
+  </div>
+</div>
+
+<div class="eqPanel" id="eqPanel" hidden role="region" aria-label="Equations used in this project"></div>
+
+<div class="controls">
+  <div class="slider-group"><label for="slFolders">Folders</label><input type="range" id="slFolders" min="3" max="30" step="1" value="12"><span class="val" id="valFolders">12</span></div>
+  <div class="slider-group"><label for="slFiles">Files</label><input type="range" id="slFiles" min="2" max="40" step="1" value="8"><span class="val" id="valFiles">8</span></div>
+  <button id="btnShuffle">⚄ Shuffle</button>
+  <button class="zoomBtn" id="btnZoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+  <span class="zoomLabel" id="zoomLabel" aria-live="polite">100%</span>
+  <button class="zoomBtn" id="btnZoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+const canvas = document.getElementById("graph");
+const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+const zoomLabelEl = document.getElementById("zoomLabel");
+const selLineEl = document.getElementById("selLine");
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+/* 1. QUATERNION MATH */
+function qMul(a, b) {
+  const aw=a[0],ax=a[1],ay=a[2],az=a[3], bw=b[0],bx=b[1],by=b[2],bz=b[3];
+  return [aw*bw-ax*bx-ay*by-az*bz, aw*bx+ax*bw+ay*bz-az*by, aw*by-ax*bz+ay*bw+az*bx, aw*bz+ax*by-ay*bx+az*bw];
+}
+function qFromAxisAngle(ax, ay, az, angle) { const h = angle*0.5, s = Math.sin(h); return [Math.cos(h), ax*s, ay*s, az*s]; }
+function qNormalize(q) {
+  const m = Math.sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3]);
+  return m > 1e-9 ? [q[0]/m, q[1]/m, q[2]/m, q[3]/m] : [1,0,0,0];
+}
+function qRotate(q, v) {
+  const w=q[0],x=q[1],y=q[2],z=q[3], vx=v[0],vy=v[1],vz=v[2];
+  const tx=2*(y*vz-z*vy), ty=2*(z*vx-x*vz), tz=2*(x*vy-y*vx);
+  return [vx+w*tx+(y*tz-z*ty), vy+w*ty+(z*tx-x*tz), vz+w*tz+(x*ty-y*tx)];
+}
+function slerp(a, b, t) {
+  let dot = a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3], bb = b;
+  if (dot < 0) { bb = [-b[0],-b[1],-b[2],-b[3]]; dot = -dot; }
+  if (dot > 0.9995) return qNormalize([a[0]+(bb[0]-a[0])*t, a[1]+(bb[1]-a[1])*t, a[2]+(bb[2]-a[2])*t, a[3]+(bb[3]-a[3])*t]);
+  const th0 = Math.acos(Math.min(1, dot)), th = th0*t;
+  const s0 = Math.sin(th0-th)/Math.sin(th0), s1 = Math.sin(th)/Math.sin(th0);
+  return [a[0]*s0+bb[0]*s1, a[1]*s0+bb[1]*s1, a[2]*s0+bb[2]*s1, a[3]*s0+bb[3]*s1];
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* 2. BELL NUMBERS */
+const EXACT_BELL_MAX = 120;
+const bellTriangle = [[1n]];
+const bellNumbers = [1n];
+function extendBellOne() {
+  const prev = bellTriangle[bellTriangle.length - 1], i = prev.length, row = [prev[i - 1]];
+  for (let j = 1; j <= i; j++) row.push(row[j-1] + prev[j-1]);
+  bellTriangle.push(row); bellNumbers.push(row[0]);
+}
+function ensureBells(n) { const target = Math.min(n, EXACT_BELL_MAX); while (bellNumbers.length <= target) extendBellOne(); }
+function lambertW(x) {
+  if (x < 0.5) return x * Math.exp(-x);
+  let w = Math.log(x) - Math.log(Math.log(x));
+  for (let i = 0; i < 15; i++) {
+    const ew = Math.exp(w), wew = w*ew, num = wew - x;
+    const den = ew*(w+1) - (w+2)*num/(2*w+2), dw = num/den;
+    w -= dw;
+    if (Math.abs(dw) < 1e-12) break;
+  }
+  return w;
+}
+function log10BellApprox(n) {
+  if (n < 2) return 0;
+  const r = lambertW(n);
+  const lnB = (n + 0.5)*Math.log(n/r) + (n/r - n - 1) - 0.5*Math.log(1 + r);
+  return lnB / Math.LN10;
+}
+function formatBell(n) {
+  if (n <= EXACT_BELL_MAX) {
+    ensureBells(n);
+    const s = bellNumbers[n].toString();
+    return s.length <= 24 ? { v: s, digits: s.length } : { v: s.slice(0, 10) + "…" + s.slice(-8), digits: s.length };
+  }
+  const lg = log10BellApprox(n);
+  return { v: "≈ 10^" + lg.toFixed(1), digits: Math.floor(lg) + 1 };
+}
+
+/* 3. STATE */
+let seed = 20251104, folderCount = 12, filesPerFolder = 8, colorMode = true;
+let nodes = [], FOLDERS = [];
+let edgesFlat = new Uint32Array(0), edgeCount = 0, N = 0, R = 200;
+let degree = [], adj = [], adjEdges = [];
+let Px, Py, Pz, projX, projY, projZ, projS;
+let orderArr = [], nodeColors = [];
+let q = qNormalize(qMul(qFromAxisAngle(0, 1, 0, 0.6), qFromAxisAngle(1, 0, 0, -0.22)));
+let zoom = 1;
+const ZOOM_MIN = 0.3, ZOOM_MAX = 5.0;
+let hovered = -1, selected = -1, active = -1;
+let activeSet = new Set(), activeEdge = new Set();
+
+/* 4. VAULT GENERATION */
+const FOLDER_NAMES = ["Projects","Research","Daily","Design","Archive","Ideas","Meetings","Reference","Inbox","Templates","Zettel","Journal","Notes","Work","Personal","Reading","Learning","Writing","Logs","Scratch","Drafts","Published","Someday","Active","Area A","Area B","Area C","Area D","Area E","Area F"];
+const FOLDER_COLORS = ["#c084fc","#f472b6","#60a5fa","#34d399","#94a3b8","#fbbf24","#22d3ee","#a3e635","#e879f9","#fb923c","#4ade80","#f87171","#facc15","#a78bfa","#f9a8d4","#7dd3fc","#6ee7b7","#fca5a5","#93c5fd","#d8b4fe","#fde68a","#86efac","#fca5a5","#bae6fd","#fdba74","#c4b5fd","#a7f3d0","#fecaca","#bfdbfe","#e9d5ff"];
+const TOPICS = ["Quaternion","Graph","Sphere","Force","Camera","Node","Edge","Depth","Track","Ray","Math","Vault","Index","Log","Draft","Sketch","Plan","Note","Idea","Review","Concept","Data","Signal","Vector","Matrix","Tensor","Field","Wave","Pattern","System","Module","Cluster","Spring","Pivot","Axis","Frame"];
+const TYPES = ["Notes","Ideas","Log","Draft","Analysis","Overview","Summary","Reference","Sketch","Plan","Study","Guide"];
+
+function shuffleArr(arr, rng) {
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return arr;
+}
+
+function buildVault() {
+  const rng = mulberry32(seed), F = folderCount;
+  const namePool = shuffleArr([...FOLDER_NAMES], rng);
+  FOLDERS = []; nodes = [];
+  const edgeList = [], edgeKey = new Set();
+
+  for (let i = 0; i < F; i++) FOLDERS.push({ name: i < namePool.length ? namePool[i] : `Group ${i+1}`, files: [], fileIds: [], folderIdx: i });
+  for (let fi = 0; fi < F; fi++) {
+    for (let j = 0; j < filesPerFolder; j++) {
+      const t = TOPICS[Math.floor(rng()*TOPICS.length)], ty = TYPES[Math.floor(rng()*TYPES.length)];
+      FOLDERS[fi].files.push(`${t} ${ty} ${fi}-${j}.md`);
+    }
+  }
+  FOLDERS.forEach((f, fi) => { f.nodeId = nodes.length; nodes.push({ name: f.name, type: "folder", folder: fi }); });
+  FOLDERS.forEach((f, fi) => f.files.forEach(fname => { const id = nodes.length; nodes.push({ name: fname, type: "file", folder: fi }); f.fileIds.push(id); }));
+  N = nodes.length;
+
+  const addEdge = (a, b) => {
+    if (a === b) return;
+    const k = a < b ? a + ":" + b : b + ":" + a;
+    if (edgeKey.has(k)) return;
+    edgeKey.add(k); edgeList.push(a, b);
+  };
+  FOLDERS.forEach(f => f.fileIds.forEach(id => addEdge(id, f.nodeId)));
+  FOLDERS.forEach(f => {
+    const ids = f.fileIds, n = ids.length;
+    if (n < 2) return;
+    for (let k = 0; k < n*2; k++) addEdge(ids[Math.floor(rng()*n)], ids[Math.floor(rng()*n)]);
+  });
+  const crossCount = Math.min(400, Math.floor(N*0.20));
+  for (let k = 0; k < crossCount; k++) addEdge(Math.floor(rng()*N), Math.floor(rng()*N));
+  const bridgeCount = Math.min(F*2, 24);
+  for (let k = 0; k < bridgeCount; k++) addEdge(FOLDERS[Math.floor(rng()*F)].nodeId, FOLDERS[Math.floor(rng()*F)].nodeId);
+
+  edgesFlat = new Uint32Array(edgeList);
+  edgeCount = edgesFlat.length / 2;
+  degree = new Int32Array(N);
+  for (let e = 0; e < edgeCount; e++) { degree[edgesFlat[e*2]]++; degree[edgesFlat[e*2+1]]++; }
+  nodes.forEach((n, i) => {
+    const d = Math.sqrt(degree[i]);
+    n.r = n.type === "folder" ? 5.5 + Math.min(3.5, d*0.30) : 2.8 + Math.min(2.2, d*0.20);
+  });
+  R = 80 + 13*Math.sqrt(N);
+
+  adj = Array.from({ length: N }, () => []);
+  adjEdges = Array.from({ length: N }, () => []);
+  for (let e = 0; e < edgeCount; e++) {
+    const a = edgesFlat[e*2], b = edgesFlat[e*2+1];
+    adj[a].push(b); adj[b].push(a); adjEdges[a].push(e); adjEdges[b].push(e);
+  }
+}
+
+/* 5. LAYOUT — clustered sphere */
+function tangentBasis(d) {
+  const ref = Math.abs(d[0]) < 0.9 ? [1,0,0] : [0,1,0];
+  let t1 = [d[1]*ref[2]-d[2]*ref[1], d[2]*ref[0]-d[0]*ref[2], d[0]*ref[1]-d[1]*ref[0]];
+  const m1 = Math.hypot(t1[0], t1[1], t1[2]) || 1;
+  t1 = [t1[0]/m1, t1[1]/m1, t1[2]/m1];
+  const t2 = [d[1]*t1[2]-d[2]*t1[1], d[2]*t1[0]-d[0]*t1[2], d[0]*t1[1]-d[1]*t1[0]];
+  return [t1, t2];
+}
+
+function layout() {
+  const rng = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+  const F = FOLDERS.length, GOLDEN = Math.PI * (3 - Math.sqrt(5));
+  Px = new Float32Array(N); Py = new Float32Array(N); Pz = new Float32Array(N);
+
+  const folderDir = new Array(F);
+  for (let i = 0; i < F; i++) {
+    const idx = i + 0.5, y = 1 - (idx/F)*2, r = Math.sqrt(Math.max(0, 1 - y*y)), theta = idx*GOLDEN;
+    folderDir[i] = [Math.cos(theta)*r, y, Math.sin(theta)*r];
+  }
+  const a1 = rng()*Math.PI*2, a2 = rng()*Math.PI*2;
+  const rotQ = qNormalize(qMul(qFromAxisAngle(1, 0, 0, a1), qFromAxisAngle(0, 1, 0, a2)));
+  for (let i = 0; i < F; i++) folderDir[i] = qRotate(rotQ, folderDir[i]);
+  for (let i = 0; i < F; i++) {
+    const d = folderDir[i], id = FOLDERS[i].nodeId;
+    Px[id] = d[0]*R; Py[id] = d[1]*R; Pz[id] = d[2]*R;
+  }
+
+  const fairCapRad = Math.acos(clamp(1 - 2/F, -1, 1));
+  const clusterBase = fairCapRad * 0.72;
+
+  for (let fi = 0; fi < F; fi++) {
+    const f = FOLDERS[fi], d = folderDir[fi];
+    const [t1, t2] = tangentBasis(d);
+    const n = f.fileIds.length;
+    if (n === 0) continue;
+    const sizeScale = Math.pow(n / Math.max(1, filesPerFolder), 0.28);
+    const clusterMaxRad = clusterBase * sizeScale, minRad = clusterMaxRad * 0.28;
+    const basePhi = rng() * Math.PI * 2;
+    const shuffled = shuffleArr([...Array(n).keys()], rng);
+    for (let rank = 0; rank < n; rank++) {
+      const fileId = f.fileIds[shuffled[rank]];
+      const frac = (rank + 0.5)/n, ang = minRad + frac*(clusterMaxRad - minRad), phi = basePhi + rank*GOLDEN;
+      const sa = Math.sin(ang), ca = Math.cos(ang), cphi = Math.cos(phi), sphi = Math.sin(phi);
+      const tx = cphi*t1[0]+sphi*t2[0], ty = cphi*t1[1]+sphi*t2[1], tz = cphi*t1[2]+sphi*t2[2];
+      const nx = d[0]*ca + tx*sa + (rng()-0.5)*0.012;
+      const ny = d[1]*ca + ty*sa + (rng()-0.5)*0.012;
+      const nz = d[2]*ca + tz*sa + (rng()-0.5)*0.012;
+      const m = Math.hypot(nx, ny, nz) || 1;
+      Px[fileId] = (nx/m)*R; Py[fileId] = (ny/m)*R; Pz[fileId] = (nz/m)*R;
+    }
+  }
+}
+
+/* 6. CANVAS SIZING (DPR-AWARE) */
+let W = 0, H = 0, dpr = 1;
+const MAX_DPR = 2;
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const cssW = Math.max(1, rect.width), cssH = Math.max(1, rect.height);
+  dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+  const pxW = Math.round(cssW*dpr), pxH = Math.round(cssH*dpr);
+  if (canvas.width !== pxW || canvas.height !== pxH) { canvas.width = pxW; canvas.height = pxH; }
+  W = cssW; H = cssH;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(resize).observe(canvas);
+window.addEventListener("orientationchange", () => setTimeout(resize, 80));
+window.addEventListener("resize", resize);
+
+/* 7. PROJECTION */
+const CAM = 4;
+function fitScale() { return Math.min(W, H) * 0.43 / (R * (CAM / (CAM - 1))); }
+
+function projectAll() {
+  const qw=q[0], qx=q[1], qy=q[2], qz=q[3];
+  const fit = fitScale() * zoom, camDist = CAM * R;
+  for (let i = 0; i < N; i++) {
+    const px=Px[i], py=Py[i], pz=Pz[i];
+    const tx=2*(qy*pz-qz*py), ty=2*(qz*px-qx*pz), tz=2*(qx*py-qy*px);
+    const vx=px+qw*tx+(qy*tz-qz*ty), vy=py+qw*ty+(qz*tx-qx*tz), vz=pz+qw*tz+(qx*ty-qy*tx);
+    const s = (camDist / (camDist - vz)) * fit;
+    projX[i] = vx*s; projY[i] = vy*s; projZ[i] = vz; projS[i] = s;
+  }
+}
+
+/* 8. RENDER */
+const EDGE_BUCKETS = 16;
+const EDGE_OP = new Float32Array(EDGE_BUCKETS), EDGE_SW = new Float32Array(EDGE_BUCKETS);
+for (let b = 0; b < EDGE_BUCKETS; b++) { const t = (b+0.5)/EDGE_BUCKETS; EDGE_OP[b] = 0.02 + t*0.12; EDGE_SW[b] = 0.35 + t*0.8; }
+const edgeBuffers = Array.from({ length: EDGE_BUCKETS }, () => []);
+const fontCache = new Map();
+function getFont(weight, size) {
+  const key = weight + "|" + size;
+  let f = fontCache.get(key);
+  if (!f) { f = `${weight} ${size}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`; fontCache.set(key, f); }
+  return f;
+}
+let labelBudget = 240;
+
+function drawEdges() {
+  for (let b = 0; b < EDGE_BUCKETS; b++) edgeBuffers[b].length = 0;
+  const invR = 1 / (2 * R);
+  for (let e = 0; e < edgeCount; e++) {
+    const a = edgesFlat[e*2], b = edgesFlat[e*2+1];
+    const ax = projX[a], ay = projY[a], az = projZ[a];
+    const bx = projX[b], by = projY[b], bz = projZ[b];
+    let bi = ((az + bz) * 0.5 * invR + 0.5) * EDGE_BUCKETS | 0;
+    if (bi < 0) bi = 0; else if (bi >= EDGE_BUCKETS) bi = EDGE_BUCKETS - 1;
+    const buf = edgeBuffers[bi];
+    buf.push(ax, ay, bx, by);
+  }
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineCap = "round";
+  for (let b = 0; b < EDGE_BUCKETS; b++) {
+    const buf = edgeBuffers[b];
+    if (buf.length === 0) continue;
+    ctx.globalAlpha = EDGE_OP[b];
+    ctx.lineWidth = EDGE_SW[b];
+    ctx.beginPath();
+    for (let i = 0; i < buf.length; i += 4) {
+      ctx.moveTo(buf[i], buf[i+1]);
+      ctx.lineTo(buf[i+2], buf[i+3]);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawActiveEdges() {
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.15;
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath();
+  for (const e of activeEdge) {
+    const a = edgesFlat[e*2], b = edgesFlat[e*2+1];
+    ctx.moveTo(projX[a], projY[a]);
+    ctx.lineTo(projX[b], projY[b]);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function sortByDepth() { orderArr.sort((a, b) => projZ[a] - projZ[b]); }
+
+function drawNodes() {
+  const invR = 1 / (2 * R), dim = active >= 0;
+  let lastFill = "";
+  for (let k = 0; k < N; k++) {
+    const i = orderArr[k];
+    const pz = projZ[i];
+    const t = clamp(pz * invR + 0.5, 0, 1);
+    const depthScale = 0.55 + 0.85 * t;
+    const n = nodes[i];
+    const r = Math.max(0.55, n.r * projS[i] * depthScale);
+
+    let op;
+    if (dim) op = activeSet.has(i) ? Math.min(1, 0.18 + 0.82*(t*t*0.5 + t*0.5) + 0.25) : 0.05;
+    else op = 0.18 + 0.82 * (t*t*0.5 + t*0.5);
+
+    const col = nodeColors[i];
+    if (col !== lastFill) { ctx.fillStyle = col; lastFill = col; }
+    ctx.globalAlpha = op;
+    ctx.beginPath();
+    ctx.arc(projX[i], projY[i], r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawLabels() {
+  const invR = 1 / (2 * R), dim = active >= 0;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  let lastFont = "", lastFill = "";
+
+  if (dim) {
+    for (const i of activeSet) {
+      const n = nodes[i], pz = projZ[i];
+      const t = clamp(pz * invR + 0.5, 0, 1);
+      const fs = clamp(10.5 * projS[i] * (0.55 + 0.85*t), 5, 14) | 0;
+      if (fs < 6) continue;
+      const fontStr = getFont(n.type === "folder" ? 600 : 400, fs);
+      if (fontStr !== lastFont) { ctx.font = fontStr; lastFont = fontStr; }
+      const col = nodeColors[i];
+      if (col !== lastFill) { ctx.fillStyle = col; lastFill = col; }
+      ctx.globalAlpha = 0.95 * (0.25 + t * 0.75);
+      ctx.fillText(n.name, projX[i], projY[i] + Math.max(1.4, n.r*projS[i]*(0.55+0.85*t)) + 3);
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
+
+  let drawn = 0;
+  for (let k = 0; k < N; k++) {
+    if (drawn >= labelBudget) break;
+    const i = orderArr[k];
+    const n = nodes[i], pz = projZ[i];
+    const t = clamp(pz * invR + 0.5, 0, 1);
+    let op = 0;
+    if (n.type === "folder") op = 0.55;
+    else if (t > 0.82) op = 0.22;
+    op *= 0.25 + t * 0.75;
+    if (op <= 0.04) continue;
+    const depthScale = 0.55 + 0.85 * t;
+    const fs = clamp(10.5 * projS[i] * depthScale, 5, 14) | 0;
+    if (fs < 6) continue;
+    const fontStr = getFont(n.type === "folder" ? 600 : 400, fs);
+    if (fontStr !== lastFont) { ctx.font = fontStr; lastFont = fontStr; }
+    const col = nodeColors[i];
+    if (col !== lastFill) { ctx.fillStyle = col; lastFill = col; }
+    ctx.globalAlpha = op;
+    ctx.fillText(n.name, projX[i], projY[i] + Math.max(1.4, n.r*projS[i]*depthScale) + 3);
+    drawn++;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function render() {
+  if (N === 0) return;
+  projectAll();
+  ctx.fillStyle = "#08080a";
+  ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.translate(W * 0.5, H * 0.5);
+  if (active >= 0) drawActiveEdges(); else drawEdges();
+  sortByDepth();
+  drawNodes();
+  drawLabels();
+  ctx.restore();
+}
+
+/* 9. PALETTE */
+function applyPalette() {
+  nodeColors = new Array(N);
+  for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    nodeColors[i] = colorMode
+      ? FOLDER_COLORS[n.folder % FOLDER_COLORS.length]
+      : (n.type === "folder" ? "#ffffff" : "#b8b8c8");
+  }
+}
+
+/* 10. REGENERATE */
+function regenerate() {
+  buildVault();
+  layout();
+  projX = new Float32Array(N); projY = new Float32Array(N);
+  projZ = new Float32Array(N); projS = new Float32Array(N);
+  orderArr = new Array(N);
+  for (let i = 0; i < N; i++) orderArr[i] = i;
+  applyPalette();
+  labelBudget = N > 900 ? 120 : N > 500 ? 200 : 320;
+  updateStats();
+  refreshActive();
+}
+
+function updateStats() {
+  document.getElementById("statsLine1").textContent =
+    `${N} nodes · ${FOLDERS.length} folders · ${edgeCount} links`;
+  document.getElementById("statsLine2").textContent =
+    `${filesPerFolder} files/folder · R=${R.toFixed(0)}`;
+  const b = formatBell(N);
+  document.getElementById("bellLine").innerHTML =
+    `B<sub>${N}</sub> <i>=</i> <b>${b.v}</b> <i>· ${b.digits.toLocaleString()} digits</i>`;
+}
+
+/* 11. INTERACTION */
+let dragging = false, dragMoved = false, lastX = 0, lastY = 0;
+let spin = [0, 0, 0];
+const prefersReducedMotion = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false;
+let autoRotate = !prefersReducedMotion;
+let resetAnim = null;
+const pointers = new Map();
+let pinchStartDist = 0, pinchStartZoom = 1;
+
+function hitTest(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = clientX - rect.left - W * 0.5;
+  const my = clientY - rect.top - H * 0.5;
+  let best = -1, bestD = Infinity;
+  for (let i = 0; i < N; i++) {
+    const dx = projX[i] - mx, dy = projY[i] - my;
+    const d2 = dx*dx + dy*dy;
+    const r = nodes[i].r * projS[i] * 1.6 + 5;
+    if (d2 < r*r && d2 < bestD) { bestD = d2; best = i; }
+  }
+  return best;
+}
+
+function applyDrag(dx, dy) {
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return;
+  const ax = -dy/len, ay = dx/len, angle = len * 0.006;
+  q = qNormalize(qMul(qFromAxisAngle(ax, ay, 0, angle), q));
+  spin = [ax*angle*0.55, ay*angle*0.55, 0];
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  canvas.setPointerCapture?.(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1) {
+    dragging = true; dragMoved = false; resetAnim = null; spin = [0,0,0];
+    lastX = e.clientX; lastY = e.clientY;
+    canvas.classList.add("dragging");
+  } else if (pointers.size === 2) {
+    dragging = false;
+    canvas.classList.remove("dragging");
+    const pts = [...pointers.values()];
+    pinchStartDist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y) || 1;
+    pinchStartZoom = zoom;
+  }
+});
+
+canvas.addEventListener("pointermove", (e) => {
+  const p = pointers.get(e.pointerId);
+  if (p) { p.x = e.clientX; p.y = e.clientY; }
+  if (pointers.size === 2 && pinchStartDist > 0) {
+    const pts = [...pointers.values()];
+    const d = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+    if (d > 0) { resetAnim = null; setZoom(pinchStartZoom * (d/pinchStartDist)); }
+    dragMoved = true;
+    return;
+  }
+  if (dragging) {
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    if (Math.abs(dx) + Math.abs(dy) > 1.2) dragMoved = true;
+    applyDrag(dx, dy);
+  } else if (pointers.size === 0 && e.pointerType === "mouse") {
+    const i = hitTest(e.clientX, e.clientY);
+    if (i !== hovered) { hovered = i; refreshActive(); }
+  }
+});
+
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchStartDist = 0;
+  if (pointers.size === 0) {
+    dragging = false;
+    canvas.classList.remove("dragging");
+    if (!dragMoved) {
+      const i = hitTest(e.clientX, e.clientY);
+      selected = i >= 0 ? (selected === i ? -1 : i) : -1;
+      refreshActive();
+    }
+  } else if (pointers.size === 1) {
+    const p = [...pointers.values()][0];
+    dragging = true; lastX = p.x; lastY = p.y;
+    canvas.classList.add("dragging");
+  }
+}
+canvas.addEventListener("pointerup", endPointer);
+canvas.addEventListener("pointercancel", endPointer);
+window.addEventListener("blur", () => {
+  pointers.clear(); dragging = false; pinchStartDist = 0;
+  canvas.classList.remove("dragging");
+});
+
+function setZoom(z) {
+  zoom = clamp(z, ZOOM_MIN, ZOOM_MAX);
+  zoomLabelEl.textContent = Math.round(zoom * 100) + "%";
+}
+
+let wheelRaf = 0, pendingWheel = 0;
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  resetAnim = null;
+  let d = e.deltaY;
+  if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= 400;
+  pendingWheel += d;
+  if (!wheelRaf) wheelRaf = requestAnimationFrame(() => {
+    wheelRaf = 0;
+    setZoom(zoom * Math.exp(-pendingWheel * 0.0016));
+    pendingWheel = 0;
+  });
+}, { passive: false });
+
+document.getElementById("btnZoomIn").addEventListener("click", () => { resetAnim = null; setZoom(zoom * 1.2); });
+document.getElementById("btnZoomOut").addEventListener("click", () => { resetAnim = null; setZoom(zoom / 1.2); });
+
+const btnColor = document.getElementById("btnColor");
+const btnAuto = document.getElementById("btnAuto");
+
+function toggleColor() {
+  colorMode = !colorMode;
+  btnColor.classList.toggle("on", colorMode);
+  btnColor.setAttribute("aria-pressed", String(colorMode));
+  btnColor.textContent = colorMode ? "◐ Color" : "◑ Mono";
+  applyPalette();
+}
+function toggleAuto() {
+  autoRotate = !autoRotate;
+  btnAuto.classList.toggle("on", autoRotate);
+  btnAuto.setAttribute("aria-pressed", String(autoRotate));
+}
+btnColor.addEventListener("click", toggleColor);
+btnAuto.addEventListener("click", toggleAuto);
+
+document.getElementById("btnReset").addEventListener("click", () => {
+  resetAnim = { from: q.slice(), fromZoom: zoom, t: 0 };
+  spin = [0, 0, 0];
+});
+document.getElementById("btnShuffle").addEventListener("click", () => {
+  seed = (seed * 1103515245 + 12345) >>> 0;
+  regenerate();
+});
+
+/* Sliders */
+const slFolders = document.getElementById("slFolders");
+const slFiles = document.getElementById("slFiles");
+const valFolders = document.getElementById("valFolders");
+const valFiles = document.getElementById("valFiles");
+let rebuildScheduled = false;
+function scheduleRebuild() {
+  if (rebuildScheduled) return;
+  rebuildScheduled = true;
+  requestAnimationFrame(() => { rebuildScheduled = false; regenerate(); });
+}
+slFolders.addEventListener("input", () => {
+  folderCount = parseInt(slFolders.value, 10);
+  valFolders.textContent = folderCount;
+  scheduleRebuild();
+});
+slFiles.addEventListener("input", () => {
+  filesPerFolder = parseInt(slFiles.value, 10);
+  valFiles.textContent = filesPerFolder;
+  scheduleRebuild();
+});
+
+/* Keyboard */
+window.addEventListener("keydown", (e) => {
+  const tag = e.target && e.target.tagName;
+  if (tag === "INPUT" || tag === "BUTTON" || tag === "TEXTAREA" || tag === "SELECT") return;
+  switch (e.key) {
+    case "+": case "=": resetAnim = null; setZoom(zoom * 1.15); break;
+    case "-": case "_": resetAnim = null; setZoom(zoom / 1.15); break;
+    case "0": resetAnim = { from: q.slice(), fromZoom: zoom, t: 0 }; break;
+    case " ": e.preventDefault(); toggleAuto(); break;
+    case "c": case "C": toggleColor(); break;
+    case "s": case "S": seed = (seed * 1103515245 + 12345) >>> 0; regenerate(); break;
+    case "Escape":
+      selected = -1; refreshActive();
+      if (!eqPanelEl.hidden) closeEqPanel();
+      break;
+    case "f": case "F": toggleEqPanel(); break;
+  }
+});
+
+/* 12. REFRESH ACTIVE */
+function refreshActive() {
+  active = hovered >= 0 ? hovered : selected;
+  activeSet.clear();
+  activeEdge.clear();
+  if (active >= 0) {
+    activeSet.add(active);
+    const a = adj[active];
+    for (let k = 0; k < a.length; k++) activeSet.add(a[k]);
+    const e = adjEdges[active];
+    for (let k = 0; k < e.length; k++) activeEdge.add(e[k]);
+    const n = nodes[active];
+    const deg = adj[active].length;
+    selLineEl.textContent = `${n.type === "folder" ? "📁" : "📄"} ${n.name} · ${deg} link${deg === 1 ? "" : "s"}`;
+  } else {
+    selLineEl.textContent = "";
+  }
+}
+
+/* ==================================================================
+   13. EQUATIONS PANEL
+================================================================== */
+const eqPanelEl = document.getElementById("eqPanel");
+const btnEq = document.getElementById("btnEq");
+
+const EQUATIONS = [
+  {
+    group: "Rotation",
+    name: "Hamilton product",
+    tag: "composing two rotations",
+    latex: String.raw`\mathbf{q}_1 \mathbf{q}_2 =
+      \begin{pmatrix} w_1 w_2 - \mathbf{v}_1\!\cdot\!\mathbf{v}_2 \\[3pt]
+      w_1 \mathbf{v}_2 + w_2 \mathbf{v}_1 + \mathbf{v}_1 \!\times\! \mathbf{v}_2 \end{pmatrix}`,
+    body: "Composes two 3D rotations into one. It's non‑commutative, mirroring how real rotations behave (turning X then Y ≠ Y then X). Every drag on the sphere is applied as a left‑multiplied rotation quaternion, so successive drags compose cleanly without gimbal lock."
+  },
+  {
+    group: "Rotation",
+    name: "Axis–angle → quaternion",
+    tag: "constructing a rotation",
+    latex: String.raw`q = \left(\cos\tfrac{\theta}{2},\ \sin\tfrac{\theta}{2}\,\hat{u}\right)`,
+    body: "Builds a rotation from a unit axis û and angle θ. The half‑angle is what makes quaternions a double cover of SO(3): q and −q represent the same physical rotation. This is the bridge between a raw pointer delta (dx, dy) and a rotation."
+  },
+  {
+    group: "Rotation",
+    name: "Normalization",
+    tag: "numerical hygiene",
+    latex: String.raw`\hat{q} = \frac{q}{\lVert q \rVert},\quad
+      \lVert q \rVert = \sqrt{w^2 + x^2 + y^2 + z^2}`,
+    body: "Repeated multiplications accumulate floating‑point drift, which would slowly stretch the sphere. Re‑normalizing every frame keeps the rotation rigid and prevents the visual \"breathing\" that eventually appears in long‑running simulations."
+  },
+  {
+    group: "Rotation",
+    name: "Rotating a vector",
+    tag: "applied to every node",
+    latex: String.raw`v' = q\,v\,q^{*}\quad\Longleftrightarrow\quad
+      t = 2\,(q_v \times v),\ \ v' = v + q_w\,t + q_v \times t`,
+    body: "The sandwich product rotates a 3‑D vector by a unit quaternion. The right‑hand form (Rodrigues' formula) needs about 15 multiplies instead of 28. The render loop inlines it for every node every frame — this is where most of the speed comes from."
+  },
+  {
+    group: "Rotation",
+    name: "SLERP",
+    tag: "smooth orientation interpolation",
+    latex: String.raw`\operatorname{slerp}(q_0, q_1, t)
+      = \frac{\sin((1-t)\Omega)}{\sin\Omega} q_0
+      + \frac{\sin(t\Omega)}{\sin\Omega} q_1,\quad \cos\Omega = q_0 \!\cdot\! q_1`,
+    body: "Interpolates between two orientations along the shortest geodesic on the unit 3‑sphere. Used by the \"Reset view\" animation to ease back to identity at constant angular speed — no unintended spin around a wrong axis."
+  },
+  {
+    group: "Combinatorics",
+    name: "Bell triangle (Aitken)",
+    tag: "exact Bell numbers",
+    latex: String.raw`A_{n,0} = A_{n-1,\,n-1},\quad
+      A_{n,k} = A_{n,k-1} + A_{n-1,k-1},\quad B_n = A_{n,0}`,
+    body: "B_n counts the ways to partition an n‑element set. The triangle builds them in O(n²) using only additions, which is perfect for BigInt — that's why the HUD can display B_n exactly up to n = 120."
+  },
+  {
+    group: "Combinatorics",
+    name: "Bell asymptotic (Moser–Wyman)",
+    tag: "for n > 120",
+    latex: String.raw`B_n \sim \frac{1}{\sqrt{n}}
+      \left(\frac{n}{W(n)}\right)^{\!n+\frac12}
+      \exp\!\left(\frac{n}{W(n)} - n - 1\right)`,
+    body: "Beyond n = 120 BigInt becomes prohibitively slow; this asymptotic gives log₁₀(B_n) to enough precision to render \"≈ 10ᵏ\" in the HUD, so the digit count keeps growing smoothly as you drag the folder slider."
+  },
+  {
+    group: "Combinatorics",
+    name: "Lambert W (Halley's method)",
+    tag: "solving w·eʷ = x",
+    latex: String.raw`w_{k+1} = w_k -
+      \frac{w_k e^{w_k} - x}{\,
+        e^{w_k}(w_k+1) - \dfrac{(w_k+2)\,(w_k e^{w_k} - x)}{2 w_k + 2}
+      \,}`,
+    body: "Lambert W is the inverse of w ↦ w·eʷ. There's no closed form, so we iterate with Halley's method — a cubic‑convergent variant of Newton's. Three or four iterations give machine precision, which keeps the Bell‑number HUD essentially free."
+  },
+  {
+    group: "Geometry",
+    name: "Fibonacci sphere",
+    tag: "even folder distribution",
+    latex: String.raw`y_i = 1 - \frac{2\,(i + \tfrac12)}{F},\quad
+      \theta_i = i\,\phi,\quad \phi = \pi(3 - \sqrt{5})`,
+    body: "Places F folder nodes on the sphere with near‑uniform spacing. The golden angle φ ≈ 137.5° guarantees no two points ever clump, no matter how many folders you add — the same trick sunflowers use to pack seeds. Adding or removing a folder reshuffles minimally."
+  },
+  {
+    group: "Geometry",
+    name: "Tangent‑plane basis",
+    tag: "where files live",
+    latex: String.raw`t_1 = \frac{d \times \hat{r}}{\lVert d \times \hat{r} \rVert},\quad
+      t_2 = d \times t_1`,
+    body: "For each folder at unit direction d, we build two orthogonal tangent vectors t₁ and t₂. Files are placed by spiraling outward in that tangent plane, then re‑projecting onto the sphere — this is why file clusters hug their folder's neighbourhood."
+  },
+  {
+    group: "Geometry",
+    name: "Rodrigues rotation",
+    tag: "point on a spherical cap",
+    latex: String.raw`n = d\cos\alpha + t_1\sin\alpha \cos\varphi + t_2\sin\alpha \sin\varphi`,
+    body: "Places a node on the sphere at angular distance α from its folder, at azimuth φ around it. α grows with rank so files spiral outward; φ advances by the golden angle so successive files never line up. The result is a compact, evenly‑filled cluster on a spherical cap."
+  },
+  {
+    group: "Rendering",
+    name: "Perspective projection",
+    tag: "world → screen",
+    latex: String.raw`p = \frac{f}{1 - z/(CR)}\,(x, y) \quad\text{with}\quad
+      f = \frac{0.43 \min(W, H)}{R \, C/(C-1)}`,
+    body: "A simple pinhole camera at distance C·R along the view axis. The camera‑to‑scene ratio C/(C−1) pre‑compensates for the near‑side foreshortening so the sphere always fills roughly 86% of the viewport regardless of node count."
+  },
+  {
+    group: "Rendering",
+    name: "Depth cue",
+    tag: "size & opacity falloff",
+    latex: String.raw`s(z) = 0.55 + 0.85\,\frac{z+R}{2R},\quad
+      \alpha(z) = 0.18 + 0.82\left(\tfrac12 t^2 + \tfrac12 t\right)`,
+    body: "Nodes closer to the camera are drawn slightly larger and much more opaque. The quadratic opacity blend makes the near hemisphere pop while keeping the far hemisphere faint but visible, giving the graph a strong sense of depth without any lighting."
+  }
+];
+
+function buildEquationPanel() {
+  const frag = document.createDocumentFragment();
+  let lastGroup = null;
+  EQUATIONS.forEach((eq, i) => {
+    if (eq.group !== lastGroup) {
+      const g = document.createElement("div");
+      g.className = "eqGroup";
+      g.textContent = eq.group;
+      frag.appendChild(g);
+      lastGroup = eq.group;
+    }
+    const item = document.createElement("div");
+    item.className = "eqItem";
+    item.dataset.idx = i;
+
+    const head = document.createElement("button");
+    head.className = "eqHead";
+    head.type = "button";
+    head.setAttribute("aria-expanded", "false");
+    head.innerHTML = `<span><strong>${eq.name}</strong><br><span style="font-size:10px;color:#7a7a88;font-weight:400">${eq.tag}</span></span>`;
+
+    const body = document.createElement("div");
+    body.className = "eqBody";
+    body.hidden = true;
+
+    const eqBox = document.createElement("div");
+    eqBox.className = "eq";
+    eqBox.textContent = "\\[" + eq.latex + "\\]";
+
+    const desc = document.createElement("p");
+    desc.textContent = eq.body;
+
+    body.appendChild(eqBox);
+    body.appendChild(desc);
+    item.appendChild(head);
+    item.appendChild(body);
+    frag.appendChild(item);
+
+    head.addEventListener("click", () => {
+      const open = item.classList.toggle("open");
+      body.hidden = !open;
+      head.setAttribute("aria-expanded", String(open));
+      if (open && window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise([eqBox]).catch(() => {});
+      }
+    });
+  });
+  eqPanelEl.appendChild(frag);
+}
+
+let eqBuilt = false;
+function ensureEqBuilt() {
+  if (eqBuilt) return;
+  eqBuilt = true;
+  buildEquationPanel();
+}
+
+function openEqPanel() {
+  ensureEqBuilt();
+  eqPanelEl.hidden = false;
+  btnEq.setAttribute("aria-expanded", "true");
+  btnEq.textContent = "ƒ Equations ▴";
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([eqPanelEl]).catch(() => {});
+  }
+}
+function closeEqPanel() {
+  eqPanelEl.hidden = true;
+  btnEq.setAttribute("aria-expanded", "false");
+  btnEq.textContent = "ƒ Equations ▾";
+}
+function toggleEqPanel() {
+  if (eqPanelEl.hidden) openEqPanel(); else closeEqPanel();
+}
+btnEq.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleEqPanel();
+});
+
+/* Typeset once MathJax is ready (or on timeout). */
+window.addEventListener("mjready", () => {
+  if (eqBuilt && !eqPanelEl.hidden && window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([eqPanelEl]).catch(() => {});
+  }
+});
+
+/* Dismiss on outside click / Escape. */
+document.addEventListener("pointerdown", (e) => {
+  if (eqPanelEl.hidden) return;
+  if (eqPanelEl.contains(e.target) || btnEq.contains(e.target)) return;
+  closeEqPanel();
+});
+
+/* ==================================================================
+   14. LOOP
+================================================================== */
+let lastT = performance.now();
+let running = true;
+
+function tick(now) {
+  if (!running) return;
+  const dt = Math.min(64, now - lastT);
+  lastT = now;
+  const f = dt / 16.667;
+
+  if (resetAnim) {
+    resetAnim.t = Math.min(1, resetAnim.t + dt / 370);
+    const e = 1 - Math.pow(1 - resetAnim.t, 3);
+    q = qNormalize(slerp(resetAnim.from, [1, 0, 0, 0], e));
+    setZoom(resetAnim.fromZoom + (1 - resetAnim.fromZoom) * e);
+    if (resetAnim.t >= 1) resetAnim = null;
+  }
+  if (autoRotate && !dragging && !resetAnim) {
+    q = qNormalize(qMul(qFromAxisAngle(0, 1, 0, 0.0016 * f), q));
+  }
+  const sm = Math.hypot(spin[0], spin[1], spin[2]);
+  if (sm > 1e-5 && !dragging) {
+    q = qNormalize(qMul(qFromAxisAngle(spin[0]/sm, spin[1]/sm, spin[2]/sm, sm), q));
+    const decay = Math.pow(0.945, f);
+    spin[0] *= decay; spin[1] *= decay; spin[2] *= decay;
+  } else if (!dragging) {
+    spin[0] = spin[1] = spin[2] = 0;
+  }
+
+  render();
+  requestAnimationFrame(tick);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { running = false; }
+  else if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(tick); }
+});
+
+/* ==================================================================
+   15. BOOT
+================================================================== */
+resize();
+valFolders.textContent = folderCount;
+valFiles.textContent = filesPerFolder;
+btnAuto.classList.toggle("on", autoRotate);
+btnAuto.setAttribute("aria-pressed", String(autoRotate));
+
+regenerate();
+setZoom(1);
+refreshActive();
+requestAnimationFrame(tick);
+
+})();
+</script>
+</body>
+</html>
