@@ -2,8 +2,9 @@
 
 **A fast, dependency-free 3D graph of a note vault — rendered on a sphere, rotated with quaternions, and fingerprinted with Bell numbers.**
 
-[![Live demo](https://img.shields.io/badge/demo-sololearn-blue)](https://sololearn.com/compiler-playground/WY1cw1AhM2De/?ref=app)
+[![Live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://franknorris.github.io/Quaternion-Graph/)
 [![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ---
 
@@ -42,7 +43,7 @@ No build step, no bundler, no framework, no WebGL. Just a `<canvas>`, some math,
 ### Equations panel
 - **13 formulas documented** — Hamilton product, axis–angle construction, normalization, Rodrigues rotation, SLERP, Bell triangle, Moser–Wyman, Lambert W, Fibonacci sphere, tangent-plane basis, spherical-cap placement, perspective projection, depth cue.
 - Rendered with **MathJax 3** (SVG output).
-- **Storage-hardened** — installs an in-memory `localStorage` shim before MathJax loads, so it works in sandboxed iframes (SoloLearn, CodePen, etc.).
+- **Storage-hardened** — installs an in-memory `localStorage` shim before MathJax loads, so it works in sandboxed iframes.
 
 ### Responsiveness
 - **Mobile-first CSS** with `clamp()` fluid typography.
@@ -58,24 +59,45 @@ No build step, no bundler, no framework, no WebGL. Just a `<canvas>`, some math,
 
 ---
 
+## Live demo
+
+👉 **[franknorris.github.io/Quaternion-Graph](https://franknorris.github.io/Quaternion-Graph/)**
+
+Hosted on GitHub Pages, straight from the `main` branch.
+
+---
+
 ## Quick start
 
-Open `index.html` in any modern browser. That's it.
+Clone the repo and open `index.html` in any modern browser:
 
 ```bash
-git clone https://github.com/<you>/quaternion-graph.git
-cd quaternion-graph
+git clone https://github.com/franknorris/Quaternion-Graph.git
+cd Quaternion-Graph
 open index.html        # macOS
 xdg-open index.html    # Linux
 start index.html       # Windows
 ```
 
-To serve it locally (some browsers restrict file://):
+Some browsers restrict file://, so if the page behaves oddly, serve it locally:
 
 ```bash
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
+
+---
+
+Deploying to GitHub Pages
+
+If you've forked this and want your own live demo:
+
+1. Settings → Pages
+2. Source: Deploy from a branch
+3. Branch: main · Folder: / (root)
+4. Save. GitHub will publish at https://<your-username>.github.io/<repo-name>/ within a minute or two.
+
+No build step is required — the single index.html is the whole site.
 
 ---
 
@@ -148,7 +170,7 @@ n Bₙ
 50 1.86 × 10⁴⁷
 100 4.76 × 10¹¹⁵
 
-Two algorithms share the work:
+Two algorithms share the work.
 
 Exact (n ≤ 120) — Aitken's triangle, using BigInt:
 
@@ -173,6 +195,7 @@ Project structure
 ```
 .
 ├── index.html          # everything: markup, styles, math, renderer
+├── LICENSE
 └── README.md
 ```
 
@@ -180,22 +203,22 @@ Single-file by design. No build step, no node_modules, no framework version to f
 
 Inside index.html:
 
-Section Responsibility
-1. Quaternion math qMul, qFromAxisAngle, qNormalize, qRotate, slerp
-2. Bell numbers BigInt triangle, Lambert W, asymptotic fallback
-3. State module-level variables, no globals leaked
-4. Vault generation synthetic folders/files/edges
-5. Layout Fibonacci sphere + tangent-plane spiral
-6. Canvas sizing DPR-aware ResizeObserver
-7. Projection world → screen, inlined rotation
-8. Render edges, nodes, labels, depth sort
-9. Palette color mode + monochrome
-10. Regenerate rebuild pipeline for slider changes
-11. Interaction pointer, wheel, pinch, keyboard
-12. Refresh active hover/select neighbourhood
-13. Equations panel MathJax rendering + accordion
-14. Loop rAF tick with delta-time compensation
-15. Boot resize, initial build, start
+# Section Responsibility
+1 Quaternion math qMul, qFromAxisAngle, qNormalize, qRotate, slerp
+2 Bell numbers BigInt triangle, Lambert W, asymptotic fallback
+3 State module-level variables, no globals leaked
+4 Vault generation synthetic folders/files/edges
+5 Layout Fibonacci sphere + tangent-plane spiral
+6 Canvas sizing DPR-aware ResizeObserver
+7 Projection world → screen, inlined rotation
+8 Render edges, nodes, labels, depth sort
+9 Palette color mode + monochrome
+10 Regenerate rebuild pipeline for slider changes
+11 Interaction pointer, wheel, pinch, keyboard
+12 Refresh active hover/select neighbourhood
+13 Equations panel MathJax rendering + accordion
+14 Loop rAF tick with delta-time compensation
+15 Boot resize, initial build, start
 
 ---
 
@@ -230,7 +253,7 @@ Known limitations
 · Synthetic data only. There is no file reader, no vault import, no real-world integration. The vault is generated from a seeded PRNG.
 · No persistence. Seed, orientation, and zoom reset on reload.
 · Canvas 2D ceiling. Comfortably handles a few thousand nodes at 60 FPS. For 10,000+, either reduce edge detail or port to WebGL.
-· localStorage in sandboxed iframes. SoloLearn and similar playgrounds block storage access, which breaks MathJax's font cache. The code installs a shim, but be aware if you embed it elsewhere.
+· localStorage in sandboxed iframes. Some online playgrounds block storage access, which breaks MathJax's font cache. The code installs an in-memory shim to work around this, but it's worth knowing if you embed the page elsewhere.
 
 ---
 
@@ -257,6 +280,12 @@ Inspiration
 
 ---
 
+License
+
+MIT — see LICENSE.
+
+---
+
 Contributing
 
 Issues and PRs welcome. Particularly interested in:
@@ -267,3 +296,4 @@ Issues and PRs welcome. Particularly interested in:
 · Bug reports on mobile (iOS Safari especially)
 
 Open an issue or tag me on GitHub.
+
