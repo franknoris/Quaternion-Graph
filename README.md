@@ -2,7 +2,7 @@
 
 **A fast, dependency-free 3D graph of a note vault — rendered on a sphere, rotated with quaternions, and fingerprinted with Bell numbers.**
 
-[![Live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://franknorris.github.io/Quaternion-Graph/)
+[![Live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://franknoris.github.io/Quaternion-Graph/index.html)
 [![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -64,7 +64,7 @@ No build step, no bundler, no framework, no WebGL. Just a `<canvas>`, some math,
 
 ## Live demo
 
-👉 **[franknorris.github.io/Quaternion-Graph](https://franknorris.github.io/Quaternion-Graph/)**
+👉 **[franknorris.github.io/Quaternion-Graph](https://franknoris.github.io/Quaternion-Graph/index.html)**
 
 Hosted on GitHub Pages, straight from the `main` branch.
 
