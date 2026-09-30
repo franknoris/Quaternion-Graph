@@ -6,6 +6,9 @@
 [![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+<img width="959" height="450" alt="image" src="https://github.com/user-attachments/assets/efbb4ead-2ab4-42dd-87b7-f04bcbf6be6e" />
+
+
 ---
 
 ## What it is
